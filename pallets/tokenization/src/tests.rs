@@ -19,21 +19,23 @@ fn get_country_fund_balance() -> Balance {
         _ => 0
     }
 }
-//
-// #[test]
-// fn country_treasury_pool_should_work() {
-//     ExtBuilder::default().build().execute_with(|| {
-//         assert_eq!(get_country_fund_balance(), 0);
-//         assert_ok!(
-// 			TokenizationModule::mint_token(
-//                 COUNTRY_FUND,
-//                 &TokenizationModule::get_country_fund_id(COUNTRY_ID),
-//                 400
-//             )
-//         );
-//         assert_eq!(get_country_fund_balance(), 400);
-//     });
-// }
+
+#[test]
+fn country_treasury_pool_should_work() {
+    ExtBuilder::default().build().execute_with(|| {
+        assert_eq!(get_country_fund_balance(), 0);
+        assert_ok!(
+			TokenizationModule::mint_token(
+                Origin::signed(ALICE),
+                vec![1],
+                COUNTRY_ID,                
+                400
+            )
+        );
+        assert_eq!(get_country_fund_balance(), 400);
+    });
+}
+
 //
 // #[test]
 // fn country_treasury_pool_withdraw_should_work() {

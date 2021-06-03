@@ -30,10 +30,10 @@ orml-tokens = { default-features = false, version = '0.4.0' }
 
 primitives = { package = "bit-country-primitives", path = "../primitives", default-features = false }
 
-[dependencies.country]
+[dependencies.bc-country]
 default-features = false
-package = 'pallet-country'
-path = '../bitcountry'
+package = 'bc-country'
+path = '../../traits/bc-country'
 version = '2.0.0-rc6'
 
 [dev-dependencies]
@@ -48,11 +48,13 @@ std = [
     'frame-system/std',
     'sp-runtime/std',
     'sp-core/std',
+    'sp-api/std',
     'sp-io/std',
     'sp-std/std',
+    'pallet-balances/std',
     'orml-currencies/std',
     'orml-tokens/std',
     'orml-traits/std',
-    'primitives/std',
-    'country/std',
+    'primitives/std',    
+    'bc-country/std',    
 ]

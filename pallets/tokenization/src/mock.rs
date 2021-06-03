@@ -12,12 +12,14 @@ use frame_system::{EnsureSignedBy, EnsureRoot};
 use frame_support::pallet_prelude::{MaybeSerializeDeserialize, Hooks, GenesisBuild};
 use frame_support::sp_runtime::traits::AtLeast32Bit;
 use orml_traits::parameter_type_with_key;
+use bc_country::CountryFund;
 
 pub type AccountId = u128;
 pub type AuctionId = u64;
 pub type Balance = u128;
 pub type CountryId = u64;
 pub type BlockNumber = u64;
+
 
 pub const ALICE: AccountId = 1;
 pub const BOB: AccountId = 2;
@@ -99,10 +101,13 @@ impl orml_tokens::Config for Runtime {
 
 pub type AdaptedBasicCurrency = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
 
+pub struct CountryInfoSource {}
+
 impl Config for Runtime {
     type Event = Event;
     type TokenId = u64;
     type CountryCurrency = Currencies;
+    type CountryInfoSource = CountryInfoSource;
 }
 
 parameter_types! {
@@ -117,9 +122,32 @@ impl orml_currencies::Config for Runtime {
     type WeightInfo = ();
 }
 
-impl country::Config for Runtime {
-    type Event = Event;
-    type ModuleId = CountryFundModuleId;
+impl BCCountry<AccountId> for CountryInfoSource {
+    fn check_ownership(who: &AccountId, country_id: &CountryId) -> bool {
+        match *who {
+            ALICE => true,            
+            _ => false,
+        }
+    }
+
+    fn get_country(country_id: CountryId) -> Option<Country<AccountId>> {
+        None
+    }
+
+    fn get_country_token(country_id: CountryId) -> Option<CurrencyId> {
+        None
+    }
+    
+    fn get_country_fund(country_id: CountryId) -> Option<CountryFund<AccountId, Balance>> {
+        Some(
+            CountryFund {
+                vault: 3,
+                value: 0,
+                backing: 0, //0 BCG backing for now,
+                currency_id: Default::default(),
+            }            
+        )
+    }
 }
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
@@ -132,11 +160,10 @@ construct_runtime!(
 		UncheckedExtrinsic = UncheckedExtrinsic
 	{
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
-		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        CountryModule: country::{Module, Call, Storage, Event<T>},
+		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},        
         Currencies: orml_currencies::{ Module, Storage, Call, Event<T>},
         Tokens: orml_tokens::{ Module, Storage, Call, Event<T>},
-        TokenizationModule: tokenization:: {Module, Call, Storage, Event<T>},
+        TokenizationModule: tokenization::{Module, Call, Storage, Event<T>},
 	}
 );
 

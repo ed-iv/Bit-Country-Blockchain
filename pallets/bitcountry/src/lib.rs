@@ -71,7 +71,7 @@ pub mod pallet {
     pub(super) type AllCountriesCount<T: Config> = StorageValue<_, u64, ValueQuery>;
 
     #[pallet::storage]
-    #[pallet::getter(fn get_country_treasury)]
+    #[pallet::getter(fn get_country_fund)]
     pub type CountryTresury<T: Config> =
     StorageMap<_, Twox64Concat, CountryId, CountryFund<T::AccountId, Balance>, OptionQuery>;
 
@@ -129,6 +129,7 @@ pub mod pallet {
                 backing: 0, //0 BCG backing for now,
                 currency_id: Default::default(),
             };
+            
             CountryTresury::<T>::insert(country_id, country_fund);
 
             CountryOwner::<T>::insert(country_id, owner, ());
@@ -254,6 +255,13 @@ impl<T: Config> BCCountry<T::AccountId> for Module<T>
     fn get_country_token(country_id: CountryId) -> Option<CurrencyId> {
         if let Some(country) = Self::get_country(country_id) {
             return Some(country.currency_id);
+        }
+        None
+    }
+
+    fn get_country_fund(country_id: CountryId) -> Option<CountryFund<T::AccountId, Balance>> {
+        if let Some(fund) = Self::get_country_fund(country_id) {
+            return Some(fund)            
         }
         None
     }

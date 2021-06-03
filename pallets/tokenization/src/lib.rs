@@ -19,7 +19,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::{Decode, Encode};
-use country::{CountryOwner, CountryTresury};
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use frame_system::{self as system, ensure_signed};
 use orml_traits::{MultiCurrency, MultiCurrencyExtended};
@@ -28,6 +27,7 @@ use sp_runtime::{
     traits::{AtLeast32Bit, One, StaticLookup, Zero},
     DispatchError, DispatchResult,
 };
+use bc_country::{BCCountry, CountryFund, Country};
 use sp_std::vec::Vec;
 
 #[cfg(test)]
@@ -37,7 +37,7 @@ mod mock;
 mod tests;
 
 /// The module configuration trait.
-pub trait Config: system::Config + country::Config {
+pub trait Config: system::Config {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Config>::Event>;
     /// The arithmetic type of asset identifier.
@@ -47,6 +47,7 @@ pub trait Config: system::Config + country::Config {
         CurrencyId=CurrencyId,
         Balance=Balance,
     >;
+    type CountryInfoSource: BCCountry<Self::AccountId>;
 }
 
 /// A wrapper for a token name.
@@ -103,12 +104,11 @@ decl_module! {
         #[weight = 10_000]
         fn mint_token(origin, ticker: Ticker, country_id: CountryId, total_supply: Balance) -> DispatchResult{
             let who = ensure_signed(origin)?;
-            //Check ownership
-            ensure!(<CountryOwner<T>>::contains_key(&country_id, &who), Error::<T>::NoPermissionTokenIssuance);
+            //Check ownership            
+            ensure!(T::CountryInfoSource::check_ownership(&who, &country_id), Error::<T>::NoPermissionTokenIssuance);
 
             //Generate new CurrencyId
             let currency_id = NextTokenId::mutate(|id| -> Result<CurrencyId, DispatchError>{
-
                 let current_id =*id;
                 *id = id.checked_add(One::one())
                 .ok_or(Error::<T>::NoAvailableTokenId)?;
@@ -185,14 +185,14 @@ impl<T: Config> Module<T> {
 
     pub fn get_total_issuance(country_id: CountryId) -> Result<Balance, DispatchError> {
         let country_fund =
-            <CountryTresury<T>>::get(country_id).ok_or(Error::<T>::CountryFundIsNotAvailable)?;
+            T::CountryInfoSource::get_country_fund(country_id).ok_or(Error::<T>::CountryFundIsNotAvailable)?;
         let total_issuance = T::CountryCurrency::total_issuance(country_fund.currency_id);
 
         Ok(total_issuance)
     }
 
     pub fn get_country_fund_id(country_id: CountryId) -> T::AccountId {
-        match <CountryTresury<T>>::get(country_id) {
+        match T::CountryInfoSource::get_country_fund(country_id) {
             Some(fund) => fund.vault,
             _ => Default::default()
         }

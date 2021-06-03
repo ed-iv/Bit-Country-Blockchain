@@ -1100,6 +1100,7 @@ impl tokenization::Config for Runtime {
     type Event = Event;
     type TokenId = u64;
     type CountryCurrency = Currencies;
+    type CountryInfoSource = BitCountryModule;
 }
 
 construct_runtime!(

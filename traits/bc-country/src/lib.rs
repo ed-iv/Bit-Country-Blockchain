@@ -33,5 +33,7 @@ pub trait BCCountry<AccountId> {
 
     fn get_country(country_id: CountryId) -> Option<Country<AccountId>>;    
 
+    fn get_country_fund(country_id: CountryId) -> Option<CountryFund<AccountId, Balance>>;
+    
     fn get_country_token(country_id: CountryId) -> Option<CurrencyId>;
 }

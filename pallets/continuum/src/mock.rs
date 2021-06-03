@@ -40,7 +40,7 @@ parameter_types! {
 
 pub type AccountId = u128;
 pub type AuctionId = u64;
-pub type Balance = u64;
+pub type Balance = u128;
 pub type CountryId = u64;
 pub type BlockNumber = u64;
 
@@ -155,6 +155,10 @@ impl BCCountry<AccountId> for CountryInfoSource {
     }
 
     fn get_country_token(country_id: CountryId) -> Option<CurrencyId> {
+        None
+    }
+
+    fn get_country_fund(country_id: CountryId) -> Option<CountryFund<AccountId, Balance>> {
         None
     }
 }
