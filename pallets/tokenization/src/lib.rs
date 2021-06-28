@@ -62,6 +62,7 @@ pub type Ticker = Vec<u8>;
 pub struct Token<Balance> {
     pub ticker: Ticker,
     pub total_supply: Balance,
+    pub share_currency_id: CurrencyId,
 }
 
 decl_storage! {
@@ -71,7 +72,7 @@ decl_storage! {
         /// Details of the token corresponding to the token id.
         /// (hash) -> Token details [returns Token struct]
         SocialTokens get(fn token_details): map hasher(blake2_128_concat) CurrencyId => Token<Balance>;
-        CountryTreasury get(fn get_country_treasury): map hasher(blake2_128_concat) CountryId => Option<CountryFund<T::AccountId,Balance>>;
+        pub CountryTreasury get(fn get_country_treasury): map hasher(blake2_128_concat) CountryId => Option<CountryFund<T::AccountId,Balance>>;
     }
 }
 
@@ -109,21 +110,11 @@ decl_module! {
             let who = ensure_signed(origin)?;
             ensure!(T::CountryInfoSource::check_ownership(&who, &country_id), Error::<T>::NoPermissionTokenIssuance);
             ensure!(!CountryTreasury::<T>::contains_key(&country_id), Error::<T>::SocialTokenAlreadyIssued);
-            //Generate new CurrencyId
-            let currency_id = NextTokenId::mutate(|id| -> Result<CurrencyId, DispatchError>{
-                let current_id =*id;
-                if current_id == 0 {
-                   *id = 2;
-                    Ok(One::one())
-                }
-                else{
-                    *id = id.checked_add(One::one())
-                    .ok_or(Error::<T>::NoAvailableTokenId)?;
-                    Ok(current_id)
-                }
-            })?;
-            let fund_id: T::AccountId = T::SocialTokenTreasury::get().into_sub_account(country_id);
+            
+            let (currency_id, share_currency_id) = Self::get_new_token_ids()?;
 
+            let fund_id: T::AccountId = T::SocialTokenTreasury::get().into_sub_account(country_id);
+        
             //Country treasury
             let country_fund = CountryFund {
                 vault: fund_id,
@@ -135,12 +126,13 @@ decl_module! {
             let token_info = Token{
                 ticker,
                 total_supply,
+                share_currency_id
             };
             //Store social token info
             SocialTokens::insert(currency_id, token_info);
 
             CountryTreasury::<T>::insert(country_id, country_fund);
-            //TODO Add initial LP
+            
             T::CountryCurrency::deposit(currency_id, &who, total_supply)?;
             let fund_address = Self::get_country_fund_id(country_id);
             Self::deposit_event(Event::<T>::SocialTokenIssued(currency_id.clone(), who, fund_address ,total_supply));
@@ -212,5 +204,22 @@ impl<T: Config> Module<T> {
             Some(fund) => fund.vault,
             _ => Default::default()
         }
+    }
+
+    pub fn get_new_token_ids() -> Result<(CurrencyId, CurrencyId), DispatchError>  {
+        //Generate new CurrencyId
+        let token_ids: (CurrencyId, CurrencyId) = 
+            NextTokenId::mutate(|id| -> Result<(CurrencyId, CurrencyId), DispatchError>{
+            let current_id =*id;
+            if current_id == 0 {
+               *id = 3;
+                Ok((One::one(), 2))
+            } else{
+                *id = id.checked_add(2)
+                .ok_or(Error::<T>::NoAvailableTokenId)?;
+                Ok((current_id, current_id + 1))
+            }
+        })?;
+        Ok(token_ids)
     }
 }
