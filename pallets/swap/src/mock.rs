@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate as bitcountry;
+use crate as swap;
 use super::*;
 use frame_support::{
     construct_runtime, parameter_types, ord_parameter_types, weights::Weight,
@@ -8,14 +8,18 @@ use frame_support::{
 };
 use sp_core::H256;
 use sp_runtime::{testing::Header, traits::IdentityLookup, ModuleId, Perbill};
-use primitives::{CurrencyId, Amount};
+use primitives::{SocialTokenCurrencyId, CurrencyId, Amount};
 use frame_system::{EnsureSignedBy, EnsureRoot};
 use frame_support::pallet_prelude::{MaybeSerializeDeserialize, Hooks, GenesisBuild};
 use frame_support::sp_runtime::traits::AtLeast32Bit;
+use orml_traits::parameter_type_with_key;
+
+
+// use tokenization::Config::CountryCurrency;
 
 pub type AccountId = u128;
 pub type AuctionId = u64;
-pub type Balance = u64;
+pub type Balance = u128;
 pub type CountryId = u64;
 pub type BlockNumber = u64;
 
@@ -73,20 +77,68 @@ impl pallet_balances::Config for Runtime {
     type MaxLocks = ();
     type WeightInfo = ();
 }
+pub type AdaptedBasicCurrency = orml_currencies::BasicCurrencyAdapter<Runtime, Balances, Amount, BlockNumber>;
 
-parameter_types! {
-	pub const CountryFundModuleId: ModuleId = ModuleId(*b"bit/fund");
+pub type SocialTokenCurrency = orml_tokens::MultiCurrencyExtended<
+    AccountId,
+    CurrencyId=SocialTokenCurrencyId, 
+    Balance=Balance, 
+    Amount=Amount
+>;
+
+
+parameter_types! {	
+    pub const GetSwapFee: (u32, u32) = (3, 1000);
 }
 
 impl Config for Runtime {
     type Event = Event;
     type ModuleId = CountryFundModuleId;
+    type GetSwapFee = GetSwapFee;
+    type SocialTokenCurrency = SocialTokenCurrency;
+    type NativeCurrency = AdaptedBasicCurrency;
 }
 
 pub type CountryModule = Module<Runtime>;
 
 type UncheckedExtrinsic = frame_system::mocking::MockUncheckedExtrinsic<Runtime>;
 type Block = frame_system::mocking::MockBlock<Runtime>;
+
+
+
+parameter_type_with_key! {
+	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
+		Default::default()
+	};
+}
+
+parameter_types! {
+    pub const BitCountryTreasuryModuleId: ModuleId = ModuleId(*b"bit/trsy");
+    pub TreasuryModuleAccount: AccountId = BitCountryTreasuryModuleId::get().into_account();
+    pub const CountryFundModuleId: ModuleId = ModuleId(*b"bit/fund");
+}
+
+impl orml_tokens::Config for Runtime {
+    type Event = Event;
+    type Balance = Balance;
+    type Amount = Amount;
+    type CurrencyId = CurrencyId;
+    type WeightInfo = ();
+    type ExistentialDeposits = ExistentialDeposits;
+    type OnDust = orml_tokens::TransferDust<Runtime, TreasuryModuleAccount>;
+}
+
+parameter_types! {
+	pub const GetNativeCurrencyId: CurrencyId = NUUM;
+}
+
+impl orml_currencies::Config for Runtime {
+    type Event = Event;
+    type MultiCurrency = Tokens;
+    type NativeCurrency = AdaptedBasicCurrency;
+    type GetNativeCurrencyId = GetNativeCurrencyId;
+    type WeightInfo = ();
+}
 
 construct_runtime!(
 	pub enum Runtime where
@@ -96,7 +148,9 @@ construct_runtime!(
 	{
 		System: frame_system::{Module, Call, Config, Storage, Event<T>},
 		Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
-        Country: bitcountry::{Module, Call ,Storage, Event<T>},
+        SwapModule: swap::{Module, Call ,Storage, Event<T>},
+        Currencies: orml_currencies::{ Module, Storage, Call, Event<T>},
+        TokenizationModule: pallet_tokens::{ Module, Storage, Call, Event<T>},
 	}
 );
 

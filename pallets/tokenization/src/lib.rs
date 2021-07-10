@@ -32,6 +32,7 @@ use orml_traits::{
     LockIdentifier, MultiCurrency, MultiCurrencyExtended, MultiLockableCurrency, MultiReservableCurrency,
 };
 use primitives::{Balance, CountryId, CurrencyId, SocialTokenCurrencyId};
+use sp_io::SubstrateHostFunctions;
 use sp_runtime::{
     traits::{AtLeast32Bit, One, StaticLookup, Zero, AccountIdConversion},
     DispatchError,
@@ -39,6 +40,7 @@ use sp_runtime::{
 use sp_std::vec::Vec;
 use frame_support::sp_runtime::ModuleId;
 use bc_country::*;
+use social_token::SocialToken;
 use frame_support::traits::{Get, Currency};
 use frame_system::pallet_prelude::*;
 
@@ -225,16 +227,36 @@ pub mod pallet {
 }
 
 impl<T: Config> Module<T> {
-    fn transfer_from(
-        currency_id: SocialTokenCurrencyId,
-        from: &T::AccountId,
-        to: &T::AccountId,
-        amount: Balance,
-    ) -> DispatchResult {
-        if amount.is_zero() || from == to {
-            return Ok(());
+    pub fn get_country_fund_id(country_id: CountryId) -> T::AccountId {
+        match CountryTreasury::<T>::get(country_id) {
+            Some(fund) => fund.vault,
+            _ => Default::default()
         }
+    }      
+}
 
+
+impl<T: Config> SocialToken<T::AccountId> for Module<T> {
+    
+    fn get_total_issuance(currency_id: SocialTokenCurrencyId) -> Balance {
+        T::CountryCurrency::total_issuance(currency_id)
+    }
+
+    fn get_total_issuance_by_country_id(country_id: CountryId) 
+    -> Result<Balance, DispatchError> {
+        let country_fund =
+            CountryTreasury::<T>::get(country_id).ok_or(Error::<T>::CountryFundIsNotAvailable)?;
+        let total_issuance = T::CountryCurrency::total_issuance(country_fund.currency_id);
+
+        Ok(total_issuance)
+    }
+
+    fn transfer_from(
+        currency_id: SocialTokenCurrencyId, 
+        from: &T::AccountId, 
+        to: &T::AccountId, 
+        amount: Balance
+    ) -> DispatchResult {
         T::CountryCurrency::transfer(currency_id, from, to, amount)?;
 
         Self::deposit_event(Event::<T>::SocialTokenTransferred(
@@ -243,23 +265,25 @@ impl<T: Config> Module<T> {
             to.clone(),
             amount,
         ));
+
         Ok(())
     }
 
-    pub fn get_total_issuance(country_id: CountryId) -> Result<Balance, DispatchError> {
-        let country_fund =
-            CountryTreasury::<T>::get(country_id).ok_or(Error::<T>::CountryFundIsNotAvailable)?;
-        let total_issuance = T::CountryCurrency::total_issuance(country_fund.currency_id);
-
-        Ok(total_issuance)
+    fn deposit_to(
+        currency_id: SocialTokenCurrencyId, 
+        who: &T::AccountId, 
+        amount: Balance
+    ) -> DispatchResult {
+        T::CountryCurrency::deposit(currency_id, who, amount)?;
+        Ok(())
     }
 
-    pub fn get_country_fund_id(country_id: CountryId) -> T::AccountId {
-        match CountryTreasury::<T>::get(country_id) {
-            Some(fund) => fund.vault,
-            _ => Default::default()
-        }
+    fn withdraw_from(
+        currency_id: SocialTokenCurrencyId, 
+        who: &T::AccountId, 
+        amount: Balance
+    ) -> DispatchResult {
+        T::CountryCurrency::withdraw(currency_id, who, amount)?;
+        Ok(())
     }
 }
-
-

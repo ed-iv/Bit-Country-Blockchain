@@ -46,6 +46,7 @@ use sp_std::{
 };
 use frame_support::sp_runtime::ModuleId;
 use bc_country::*;
+use social_token::SocialToken;
 use frame_support::{
     pallet_prelude::*,
     traits::{

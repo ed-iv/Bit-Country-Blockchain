@@ -23,8 +23,8 @@ pub const ALICE: AccountId = 4;
 pub const BOB: AccountId = 5;
 pub const COUNTRY_ID: CountryId = 1;
 pub const COUNTRY_ID_NOT_EXIST: CountryId = 1;
-pub const NUUM: CurrencyId = 0;
-pub const COUNTRY_FUND: CurrencyId = 1;
+pub const NUUM: SocialTokenCurrencyId = SocialTokenCurrencyId::NativeToken(0);
+pub const COUNTRY_FUND: SocialTokenCurrencyId = SocialTokenCurrencyId::SocialToken(1);
 
 
 // Configure a mock runtime to test the pallet.
@@ -76,7 +76,7 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_type_with_key! {
-	pub ExistentialDeposits: |_currency_id: CurrencyId| -> Balance {
+	pub ExistentialDeposits: |_currency_id: SocialTokenCurrencyId| -> Balance {
 		Default::default()
 	};
 }
@@ -91,7 +91,7 @@ impl orml_tokens::Config for Runtime {
     type Event = Event;
     type Balance = Balance;
     type Amount = Amount;
-    type CurrencyId = CurrencyId;
+    type CurrencyId = SocialTokenCurrencyId;
     type WeightInfo = ();
     type ExistentialDeposits = ExistentialDeposits;
     type OnDust = orml_tokens::TransferDust<Runtime, TreasuryModuleAccount>;
@@ -113,7 +113,7 @@ impl BCCountry<AccountId> for CountryInfoSource {
         None
     }
 
-    fn get_country_token(country_id: CountryId) -> Option<CurrencyId> {
+    fn get_country_token(country_id: CountryId) -> Option<SocialTokenCurrencyId> {
         None
     }
 }
@@ -121,13 +121,13 @@ impl BCCountry<AccountId> for CountryInfoSource {
 impl Config for Runtime {
     type Event = Event;
     type TokenId = u64;
-    type CountryCurrency = Currencies;
+    type CountryCurrency = Tokens;
     type SocialTokenTreasury = CountryFundModuleId;
     type CountryInfoSource = CountryInfoSource;
 }
 
 parameter_types! {
-	pub const GetNativeCurrencyId: CurrencyId = NUUM;
+	pub const GetNativeCurrencyId: SocialTokenCurrencyId = NUUM;
 }
 
 impl orml_currencies::Config for Runtime {

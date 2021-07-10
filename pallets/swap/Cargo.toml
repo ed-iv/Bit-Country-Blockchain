@@ -22,7 +22,6 @@ frame-benchmarking = { version = "3.0.0", default-features = false, optional = t
 pallet-balances = { version = "3.0.0", default-features = false }
 pallet-randomness-collective-flip = { version = "3.0.0", default-features = false }
 pallet-sudo = { version = "3.0.0", default-features = false }
-pallet-timestamp = { version = "3.0.0", default-features = false }
 pallet-transaction-payment = { version = "3.0.0", default-features = false }
 sp-api = { version = "3.0.0", default-features = false }
 sp-io = { version = "3.0.0", default-features = false }
@@ -33,16 +32,17 @@ primitives = { package = "bit-country-primitives", path = "../primitives", defau
 
 # local packages
 bc-country = { path = "../../traits/bc-country", default-features = false }
+social-token = { path = "../../traits/social-token", default-features = false }
 
 # Orml packages
 orml-traits = { default-features = false, version = '0.4.0' }
 orml-currencies = { default-features = false, version = '0.4.0' }
 orml-tokens = { default-features = false, version = '0.4.0' }
 
-[dependencies.nft]
+[dependencies.social-currencies]
 default-features = false
-package = 'pallet-nft'
-path = '../nft'
+package = 'social-currencies'
+path = '../social-currencies'
 version = '2.0.0-rc6'
 
 [features]
@@ -54,12 +54,14 @@ std = [
     'frame-support/std',
     'frame-system/std',
     'sp-io/std',
+    'sp-io/std',
     'sp-core/std',
     "sp-std/std",
+    "sp-api/std",
     "orml-traits/std",
     "orml-tokens/std",
-    'nft/std',
-    'primitives/std'
+    "social-currencies/std",
+    'primitives/std',
 ]
 
 runtime-benchmarks = [

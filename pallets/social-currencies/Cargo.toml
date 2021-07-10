@@ -28,6 +28,7 @@ orml-traits = { default-features = false, version = '0.4.0' }
 
 primitives = { package = "bit-country-primitives", path = "../primitives", default-features = false }
 bc-country = { path = "../../traits/bc-country", default-features = false }
+social-token = { path = "../../traits/social-token", default-features = false }
 
 [dev-dependencies]
 #sp-io = { version = "3.0.0", default-features = false }

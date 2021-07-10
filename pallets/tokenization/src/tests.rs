@@ -2,7 +2,7 @@
 #[cfg(test)]
 use super::*;
 use mock::{Event, *};
-use primitives::{Balance};
+use primitives::{Balance, SocialTokenCurrencyId};
 use sp_std::vec::Vec;
 use frame_support::{assert_noop, assert_ok};
 use sp_runtime::AccountId32;
@@ -14,7 +14,7 @@ fn country_fund_account() -> AccountId {
 }
 
 fn get_country_fund_balance() -> Balance {
-    match TokenizationModule::get_total_issuance(COUNTRY_ID) {
+    match TokenizationModule::get_total_issuance_by_country_id(COUNTRY_ID) {
         Ok(balance) => balance,
         _ => 0
     }
@@ -38,7 +38,12 @@ fn mint_social_token_should_work() {
         assert_eq!(get_country_fund_balance(), 400);
         
         let event = mock::Event::tokenization(
-            crate::Event::SocialTokenIssued(1, ALICE, country_fund_account(),  400)
+            crate::Event::SocialTokenIssued(
+                SocialTokenCurrencyId::SocialToken(1),
+                ALICE, 
+                country_fund_account(),  
+                400
+            )
         );
 
         assert_eq!(last_event(), event);
